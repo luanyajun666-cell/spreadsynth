@@ -30,7 +30,7 @@
 ## 1 分钟启动
 
 ```bash
-git clone https://github.com/your-org/spreadsynth.git
+git clone https://github.com/luanyajun666-cell/spreadsynth.git
 cd spreadsynth
 docker compose up --build
 ```
