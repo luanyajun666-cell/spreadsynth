@@ -1,6 +1,8 @@
-# [分享创造] SpreadSynth：把“跨市场时差”变成可执行信号（附铁矿石实测 97.24）
+# [分享创造] SpreadSynth：一个“利用时差赚钱的开源引擎”（附铁矿石实测 97.24）
 
-大家好，开源了一个项目：**SpreadSynth**。
+大家好，刚开源了一个项目：**SpreadSynth**。
+
+一句话：这是一个“利用时差赚钱的开源引擎”。
 
 它不是单纯看板，而是一个“信息差/时差套利引擎”：
 - 采集多源数据（API、RSS、爬虫）
@@ -46,5 +48,10 @@ docker compose up --build
 1) 你希望优先接入哪些市场数据源？
 2) 在你场景里，Score 到多少你会“马上执行”？
 
+🎯 特别邀请：前 **20 位 Star** 用户，我会拉一个“策略共创组”，优先共建：
+- 实时铁矿石 API 接入
+- 跨境热点差策略模板
+- 告警阈值 A/B 优化
+
 仓库：  
-https://github.com/your-org/spreadsynth
+https://github.com/luanyajun666-cell/spreadsynth
