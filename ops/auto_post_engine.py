@@ -41,8 +41,11 @@ class EnvCfg:
     x_access_token: str = ""
     x_access_token_secret: str = ""
     x_bearer_token: str = ""
+    x_user_id: str = ""
     v2ex_cookie: str = ""
+    v2ex_username: str = ""
     hn_cookie: str = ""
+    hn_username: str = ""
     gh_token: str = ""
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -90,8 +93,11 @@ def load_env(path: Path) -> EnvCfg:
         x_access_token=data.get("X_ACCESS_TOKEN", ""),
         x_access_token_secret=data.get("X_ACCESS_TOKEN_SECRET", ""),
         x_bearer_token=data.get("X_BEARER_TOKEN", ""),
+        x_user_id=data.get("X_USER_ID", ""),
         v2ex_cookie=data.get("V2EX_COOKIE", ""),
+        v2ex_username=data.get("V2EX_USERNAME", ""),
         hn_cookie=data.get("HN_COOKIE", ""),
+        hn_username=data.get("HN_USERNAME", ""),
         gh_token=data.get("GH_TOKEN", ""),
         telegram_bot_token=data.get("TELEGRAM_BOT_TOKEN", ""),
         telegram_chat_id=data.get("TELEGRAM_CHAT_ID", ""),
@@ -361,10 +367,75 @@ def monitor_github_questions(cfg: EnvCfg, since_minutes: int = 15) -> list[str]:
             body = (c.get("body") or "").lower()
             if any(k in body for k in ["iron ore", "iron-ore", "formula", "weight", "d/t/c", "source"]):
                 drafts.append(
-                    "Draft reply (Chief Architect): Thanks for the sharp question. "
+                    "[GitHub] Draft reply (Chief Architect): Thanks for the sharp question. "
                     "Current iron-ore demo uses a historical SG-vs-CN snapshot for deterministic replay. "
                     "SpreadScore weights are 1.25D + 0.85T + 0.75C + 0.95A - 0.80K - 0.70F and can be calibrated per market regime."
                 )
+
+    return drafts
+
+
+def monitor_social_questions(cfg: EnvCfg) -> list[str]:
+    drafts: list[str] = []
+
+    # X mentions (optional)
+    if cfg.x_bearer_token and cfg.x_user_id:
+        try:
+            headers = {"Authorization": f"Bearer {cfg.x_bearer_token}"}
+            url = f"https://api.x.com/2/users/{cfg.x_user_id}/mentions"
+            r = requests.get(url, headers=headers, params={"max_results": 20}, timeout=20)
+            if r.status_code == 403:
+                raise CircuitBreak("X mentions monitor got 403.")
+            if r.status_code < 300:
+                for item in r.json().get("data", []):
+                    txt = (item.get("text") or "").lower()
+                    if any(k in txt for k in ["iron ore", "formula", "weights", "source"]):
+                        drafts.append(
+                            "[X] Draft reply: Great question. The iron-ore case is a historical SG-vs-CN snapshot for deterministic replay. "
+                            "Weights are explicitly exposed in README and scorer.py for audit and calibration."
+                        )
+        except CircuitBreak:
+            raise
+        except Exception:
+            pass
+
+    # V2EX notifications page scan (optional)
+    if cfg.v2ex_cookie:
+        try:
+            r = requests.get(
+                "https://www.v2ex.com/notifications",
+                headers={"Cookie": cfg.v2ex_cookie, "User-Agent": "SpreadSynth-Autopilot/0.1.0"},
+                timeout=20,
+            )
+            if r.status_code == 403:
+                raise CircuitBreak("V2EX notifications got 403.")
+            text = r.text.lower()
+            if any(k in text for k in ["iron ore", "公式", "权重", "数据来源"]):
+                drafts.append(
+                    "[V2EX] Draft reply: 这个案例使用的是历史快照（SG vs CN）做可复现演示，非随机数。"
+                    "公式权重在 README 与 scorer.py 都公开，欢迎一起讨论参数校准。"
+                )
+        except CircuitBreak:
+            raise
+        except Exception:
+            pass
+
+    # HN threads scan (optional)
+    if cfg.hn_username:
+        try:
+            r = requests.get(f"https://news.ycombinator.com/threads?id={cfg.hn_username}", timeout=20)
+            if r.status_code == 403:
+                raise CircuitBreak("HN threads got 403.")
+            text = r.text.lower()
+            if any(k in text for k in ["iron ore", "formula", "weights", "source"]):
+                drafts.append(
+                    "[HN] Draft reply: The iron-ore example is a deterministic historical snapshot used for reproducible behavior, "
+                    "and the scoring weights are intentionally transparent for review and retuning."
+                )
+        except CircuitBreak:
+            raise
+        except Exception:
+            pass
 
     return drafts
 
@@ -410,11 +481,14 @@ def run_monitor(cfg: EnvCfg, state: dict[str, Any]) -> None:
         if (now - prev).total_seconds() < 15 * 60:
             return
 
-    drafts = monitor_github_questions(cfg, since_minutes=15)
+    drafts = []
+    drafts.extend(monitor_github_questions(cfg, since_minutes=15))
+    drafts.extend(monitor_social_questions(cfg))
+
     if drafts:
         msg = "\n\n".join(drafts)
         notify(cfg, f"SpreadSynth monitor draft replies:\n\n{msg}")
-        log(f"Generated {len(drafts)} draft replies from recent comments.")
+        log(f"Generated {len(drafts)} draft replies from recent questions.")
 
     state["last_monitor_ts"] = now.isoformat()
 
