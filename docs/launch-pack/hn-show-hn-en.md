@@ -1,14 +1,14 @@
-# Show HN: SpreadSynth — a real-time signal arbitrage engine for cross-platform trend divergence
+# Show HN: SpreadSynth — an open-source real-time signal processing engine for time-asymmetry detection
 
 Hi HN,
 
-I built **SpreadSynth**, a small system that tracks trend/interest divergence across multiple sources (GitHub Trending, Hacker News, X, RSS, and custom APIs) and turns it into an execution-ready score.
+I built **SpreadSynth**, an open-source real-time signal processing engine focused on **time-asymmetry detection** across heterogeneous sources (GitHub Trending, HN, X, RSS, and custom APIs).
 
-The project motivation was simple: dashboards are good at observability, but weak at actionability. I wanted a pipeline that answers:
+The goal is not another dashboard. The goal is a deterministic pipeline that answers:
 
-1. Is this divergence real?
-2. Is the timing window still open?
-3. Should I execute now or ignore?
+1. Is the divergence meaningful?
+2. Is the timing window still valid?
+3. Which action should be triggered now?
 
 ## Scoring model
 
@@ -22,19 +22,26 @@ Where:
 - `K` saturation/competition
 - `F` execution friction
 
-## Technical notes
+## Technical structure
 
-- Multi-source normalization layer (API/RSS/crawler -> unified event schema)
-- FastAPI backend (scoring + demo endpoints)
-- Streamlit demo UI (radar-like panel, breakdown, replay panel)
+- Multi-source normalization layer (`API/RSS/crawler -> unified event schema`)
+- FastAPI backend (`/api/score`, `/api/demo/opportunity`)
+- Streamlit demo UI (radar core + trigger panel + replay hints)
 - Docker Compose one-command startup
 
-A small "wow" behavior is included in demo mode: if score > 90, UI switches to red-alert state and auto-generates a short battle report with a simulated Telegram push animation.
+## Deterministic demo data
+
+To avoid random output, demo events use a fixed historical snapshot:
+
+- SG-side iron ore swap lead signal
+- CN-side lagged response snapshot
+
+This keeps the run reproducible and easy to validate.
 
 ## Run locally
 
 ```bash
-git clone https://github.com/your-org/spreadsynth.git
+git clone https://github.com/luanyajun666-cell/spreadsynth.git
 cd spreadsynth
 docker compose up --build
 ```
@@ -42,9 +49,9 @@ docker compose up --build
 - UI: http://localhost:8501
 - API docs: http://localhost:8000/docs
 
-Repo: https://github.com/your-org/spreadsynth
+Repo: https://github.com/luanyajun666-cell/spreadsynth
 
-Feedback welcome, especially on:
-- scoring calibration for noisy sources
-- better divergence definitions for cross-region trends
-- practical automation actions after trigger
+Feedback I care about:
+- Better divergence definitions for cross-region topic propagation
+- Calibration strategy for noisy social sources
+- Practical trigger/action contracts for production use
