@@ -61,13 +61,20 @@ def main() -> int:
         "X_API_SECRET": prompt_secret("X_API_SECRET", required=False),
         "X_ACCESS_TOKEN": prompt_secret("X_ACCESS_TOKEN", required=False),
         "X_ACCESS_TOKEN_SECRET": prompt_secret("X_ACCESS_TOKEN_SECRET", required=False),
-        # Optional X bearer
+        # Optional X bearer + user id (mentions monitor)
         "X_BEARER_TOKEN": prompt_secret("X_BEARER_TOKEN", required=False),
+        "X_USER_ID": input("X_USER_ID (optional, for mentions monitor): ").strip(),
         # Community cookies
         "V2EX_COOKIE": prompt_secret("V2EX_COOKIE", required=False),
+        "V2EX_USERNAME": input("V2EX_USERNAME (optional): ").strip(),
         "HN_COOKIE": prompt_secret("HN_COOKIE", required=False),
+        "HN_USERNAME": input("HN_USERNAME (optional): ").strip(),
         # Optional GitHub token for star checks if needed
         "GH_TOKEN": prompt_secret("GH_TOKEN", required=False),
+        # Optional notification channels
+        "TELEGRAM_BOT_TOKEN": prompt_secret("TELEGRAM_BOT_TOKEN", required=False),
+        "TELEGRAM_CHAT_ID": input("TELEGRAM_CHAT_ID (optional): ").strip(),
+        "FEISHU_WEBHOOK": prompt_secret("FEISHU_WEBHOOK", required=False),
     }
 
     lines = [
