@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -27,6 +27,7 @@ class Snapshot:
     slope_stars_per_hour: float
     audience_breakdown_24h: dict[str, int]
     recent_users_24h: list[str]
+    potential_big_shots: list[str]
 
 
 def gh_get(url: str, *, accept: str = "application/vnd.github+json", params: dict[str, Any] | None = None):
@@ -42,7 +43,7 @@ def gh_get(url: str, *, accept: str = "application/vnd.github+json", params: dic
     return r.json()
 
 
-def classify_profile(user: dict[str, Any]) -> str:
+def classify_domain(user: dict[str, Any]) -> str:
     txt = " ".join(
         [
             str(user.get("bio") or ""),
@@ -62,14 +63,39 @@ def classify_profile(user: dict[str, Any]) -> str:
     return "unknown"
 
 
+def classify_tier(user: dict[str, Any]) -> str:
+    followers = int(user.get("followers") or 0)
+    public_repos = int(user.get("public_repos") or 0)
+    txt = " ".join(
+        [
+            str(user.get("bio") or ""),
+            str(user.get("company") or ""),
+        ]
+    ).lower()
+
+    signal_kw = ["founder", "staff", "investor", "cto", "principal", "maintainer"]
+    if followers >= 500 or public_repos >= 100 or any(k in txt for k in signal_kw):
+        return "potential_big_shot"
+    return "regular_developer"
+
+
 def fetch_recent_stars(owner: str, repo: str):
-    # starred_at requires custom media type
-    events = gh_get(
+    return gh_get(
         f"https://api.github.com/repos/{owner}/{repo}/stargazers",
         accept="application/vnd.github.star+json",
         params={"per_page": 100},
     )
-    return events
+
+
+def draft_thank_you(login: str, tier: str, domain: str) -> str:
+    if tier == "potential_big_shot":
+        return (
+            f"Hi @{login}, appreciate the star — your profile looks deeply experienced in {domain}. "
+            f"If you're open, I’d love your take on our scoring weights (D/T/C/A/K/F) and real-time iron-ore API design for v0.1.1."
+        )
+    return (
+        f"Thanks @{login} for starring SpreadSynth! If you have a use case, open an issue and I’ll help map it into a runnable strategy template."
+    )
 
 
 def main() -> int:
@@ -94,16 +120,32 @@ def main() -> int:
             stars_last_24h += 1
             recent_logins_24h.append(e["user"]["login"])
 
-    # Background inference (heuristic only)
     counter = Counter()
+    user_rows: list[dict[str, Any]] = []
+    potential_big_shots: list[str] = []
+
     for login in recent_logins_24h[:20]:
         try:
             user = gh_get(f"https://api.github.com/users/{login}")
-            counter[classify_profile(user)] += 1
+            domain = classify_domain(user)
+            tier = classify_tier(user)
+            counter[domain] += 1
+            if tier == "potential_big_shot":
+                potential_big_shots.append(login)
+            user_rows.append(
+                {
+                    "login": login,
+                    "domain": domain,
+                    "tier": tier,
+                    "followers": int(user.get("followers") or 0),
+                    "public_repos": int(user.get("public_repos") or 0),
+                    "thank_you_draft": draft_thank_you(login, tier, domain),
+                }
+            )
         except Exception:
             counter["unknown"] += 1
 
-    slope = round(float(stars_last_1h), 2)  # per hour snapshot
+    slope = round(float(stars_last_1h), 2)
 
     snap = Snapshot(
         timestamp=now.isoformat(),
@@ -114,9 +156,11 @@ def main() -> int:
         slope_stars_per_hour=slope,
         audience_breakdown_24h=dict(counter),
         recent_users_24h=recent_logins_24h,
+        potential_big_shots=potential_big_shots,
     )
 
     (OUT_DIR / "star_watch_snapshot.json").write_text(json.dumps(asdict(snap), ensure_ascii=False, indent=2), encoding="utf-8")
+    (OUT_DIR / "star_watch_users.json").write_text(json.dumps(user_rows, ensure_ascii=False, indent=2), encoding="utf-8")
 
     report = []
     report.append(f"# Star Watch Snapshot ({now.strftime('%Y-%m-%d %H:%M UTC')})")
@@ -128,6 +172,7 @@ def main() -> int:
     report.append(f"- Stars in last 24h: **{stars_last_24h}**")
     report.append(f"- Star slope (stars/hour): **{slope}**")
     report.append("")
+
     report.append("## Audience heuristic (last 24h stargazers)")
     if counter:
         for k, v in counter.items():
@@ -136,7 +181,21 @@ def main() -> int:
         report.append("- no recent stargazers yet")
 
     report.append("")
-    report.append("> Note: source channel (X/Reddit/etc.) is inferred heuristically from profile bio and cannot be guaranteed by GitHub API.")
+    report.append("## Potential big shots")
+    if potential_big_shots:
+        for u in potential_big_shots:
+            report.append(f"- @{u}")
+    else:
+        report.append("- none yet")
+
+    if user_rows:
+        report.append("")
+        report.append("## Thank-you drafts")
+        for u in user_rows[:5]:
+            report.append(f"- @{u['login']} ({u['tier']}, {u['domain']}): {u['thank_you_draft']}")
+
+    report.append("")
+    report.append("> Note: source channel (X/Reddit/etc.) cannot be directly obtained via GitHub API; attribution is heuristic only.")
 
     (OUT_DIR / "star_watch_report.md").write_text("\n".join(report), encoding="utf-8")
     print("\n".join(report))
