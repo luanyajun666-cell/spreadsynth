@@ -8,9 +8,9 @@ if [[ -z "${GH_TOKEN:-}" ]]; then
 fi
 
 MARKER="[Star-Reaper auto-watch]"
-SINCE_UTC="$(date -u -d '4 hours ago' +"%Y-%m-%dT%H:%M:%SZ")"
+SINCE_UTC="$(date -u -d '20 minutes ago' +"%Y-%m-%dT%H:%M:%SZ")"
 
-echo "[watch] scanning issues/PRs created since $SINCE_UTC"
+echo "[watch] scanning issues/PRs updated since $SINCE_UTC"
 
 comment_issue_if_needed() {
   local number="$1"
@@ -63,7 +63,7 @@ Thanks for the contribution — review feedback will be structured and actionabl
 }
 
 # Issues
-mapfile -t issue_rows < <(gh issue list --state open --search "created:>=$SINCE_UTC" --json number,author --jq '.[] | "\(.number)|\(.author.login)"')
+mapfile -t issue_rows < <(gh issue list --state open --search "updated:>=$SINCE_UTC" --json number,author --jq '.[] | "\(.number)|\(.author.login)"')
 for row in "${issue_rows[@]:-}"; do
   [[ -z "$row" ]] && continue
   IFS='|' read -r num author <<<"$row"
@@ -71,7 +71,7 @@ for row in "${issue_rows[@]:-}"; do
 done
 
 # PRs
-mapfile -t pr_rows < <(gh pr list --state open --search "created:>=$SINCE_UTC" --json number,author --jq '.[] | "\(.number)|\(.author.login)"')
+mapfile -t pr_rows < <(gh pr list --state open --search "updated:>=$SINCE_UTC" --json number,author --jq '.[] | "\(.number)|\(.author.login)"')
 for row in "${pr_rows[@]:-}"; do
   [[ -z "$row" ]] && continue
   IFS='|' read -r num author <<<"$row"
