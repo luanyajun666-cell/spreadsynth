@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-label="SpreadSynth neon cyber logo">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#05070f"/>
+      <stop offset="100%" stop-color="#0a1022"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" x2="1">
+      <stop offset="0%" stop-color="#00F5FF"/>
+      <stop offset="50%" stop-color="#7CFF00"/>
+      <stop offset="100%" stop-color="#9D4EDD"/>
+      <animate attributeName="x1" values="0;1;0" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="1;0;1" dur="8s" repeatCount="indefinite"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="360" fill="url(#bg)"/>
+
+  <!-- radar rings -->
+  <g transform="translate(180 180)">
+    <circle r="110" fill="none" stroke="#123" stroke-width="2"/>
+    <circle r="78" fill="none" stroke="#1b2a44" stroke-width="2"/>
+    <circle r="46" fill="none" stroke="#23375c" stroke-width="2"/>
+
+    <path d="M0 0 L110 0" stroke="url(#neon)" stroke-width="3" filter="url(#glow)">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="5s" repeatCount="indefinite"/>
+    </path>
+
+    <circle r="8" fill="#00F5FF" filter="url(#glow)">
+      <animate attributeName="r" values="6;10;6" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+
+    <circle r="115" fill="none" stroke="#FF2E63" stroke-width="2" opacity="0.15">
+      <animate attributeName="opacity" values="0.05;0.35;0.05" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- brand text -->
+  <g transform="translate(320 145)">
+    <text x="0" y="0" font-family="Segoe UI, Inter, Arial" font-size="72" font-weight="800" fill="url(#neon)" filter="url(#glow)">SpreadSynth</text>
+    <text x="4" y="50" font-family="Consolas, Menlo, monospace" font-size="24" fill="#9bb7d8">
+      REAL-TIME SIGNAL ARBITRAGE ENGINE
+      <animate attributeName="opacity" values="0.55;1;0.55" dur="2.5s" repeatCount="indefinite"/>
+    </text>
+  </g>
+
+  <!-- terminal stripe -->
+  <rect x="0" y="322" width="1200" height="38" fill="#05080f" opacity="0.9"/>
+  <text x="26" y="347" font-family="Consolas, Menlo, monospace" font-size="18" fill="#00F5FF">[SPREADSYNTH] signal lock acquired :: red-alert pipeline armed</text>
+</svg>
